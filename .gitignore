@@ -2,3 +2,8 @@ README-pgm.md
 benchmark_paper.tex
 proposal.md
 venv/
+
+# Ignore dataset, checkpoints, cache, and results
+datasets/
+__pycache__/
+*.pyc
