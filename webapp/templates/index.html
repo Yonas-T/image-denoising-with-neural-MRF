@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Neural MRF Image Denoiser — compare Neural Markov Random Field and ResNet baseline denoising models in real time." />
+  <title>Neural MRF Image Denoiser</title>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet" />
+
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+</head>
+<body>
+
+  <!-- Loading Overlay -->
+  <div class="loading-overlay" id="loading-overlay">
+    <div class="spinner"></div>
+    <div class="loading-text">Running denoising models…</div>
+  </div>
+
+  <div class="container">
+
+    <!-- ───── Header ───── -->
+    <header class="header">
+      <h1>Neural MRF Image Denoiser</h1>
+      <p class="subtitle">Compare Neural Markov Random Field vs ResNet Baseline — side by side</p>
+      <span class="badge">Probabilistic Graphical Models</span>
+    </header>
+
+    <!-- ───── Warnings ───── -->
+    {% if warnings %}
+    <div id="warnings">
+      {% for w in warnings %}
+      <div class="warning-banner">
+        <span class="icon">⚠️</span>
+        <p>{{ w }}</p>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- ───── Upload ───── -->
+    <section class="upload-section">
+      <div class="card">
+        <div class="upload-zone" id="upload-zone">
+          <span class="upload-icon">📷</span>
+          <p class="upload-text">Drag &amp; drop an image here, or <strong>click to browse</strong></p>
+          <p class="upload-hint">PNG, JPEG, WebP — max 16 MB · Images larger than 512 px will be resized</p>
+          <img class="upload-preview" id="upload-preview" alt="Preview" />
+          <p class="upload-filename" id="upload-filename"></p>
+          <input type="file" id="file-input" accept="image/*" hidden />
+        </div>
+      </div>
+    </section>
+
+    <!-- ───── Controls ───── -->
+    <section class="controls">
+      <div class="control-group">
+        <label for="noise-type">Noise Type</label>
+        <select id="noise-type">
+          <option value="gaussian">Gaussian</option>
+          <option value="poisson">Poisson</option>
+        </select>
+      </div>
+
+      <div class="control-group">
+        <label id="slider-label" for="noise-level">Sigma (σ)</label>
+        <div class="slider-wrapper">
+          <input type="range" id="noise-level" min="5" max="100" value="25" />
+          <span class="slider-value" id="slider-value">σ = 25</span>
+        </div>
+      </div>
+
+      <div class="control-group">
+        <button class="btn-denoise" id="denoise-btn">
+          <span>⚡</span> Denoise
+        </button>
+      </div>
+    </section>
+
+    <!-- ───── Results ───── -->
+    <section class="results-section" id="results-section">
+      <h2 class="results-heading">Results</h2>
+
+      <div class="results-grid">
+        <!-- Original -->
+        <div class="image-card">
+          <div class="card-header">
+            <span class="card-title"><span class="dot dot-original"></span>Original</span>
+          </div>
+          <div class="card-body">
+            <img id="img-original" alt="Original image" />
+          </div>
+          <div class="card-footer">
+            <button class="btn-download" id="dl-original">↓ Download</button>
+          </div>
+        </div>
+
+        <!-- Noisy -->
+        <div class="image-card">
+          <div class="card-header">
+            <span class="card-title"><span class="dot dot-noisy"></span>Noisy</span>
+          </div>
+          <div class="card-body">
+            <img id="img-noisy" alt="Noisy image" />
+          </div>
+          <div class="card-footer">
+            <button class="btn-download" id="dl-noisy">↓ Download</button>
+          </div>
+        </div>
+
+        <!-- NMRF Denoised -->
+        <div class="image-card">
+          <div class="card-header">
+            <span class="card-title"><span class="dot dot-nmrf"></span>Neural MRF</span>
+          </div>
+          <div class="card-body">
+            <img id="img-nmrf" alt="NMRF denoised" />
+          </div>
+          <div class="card-footer">
+            <button class="btn-download" id="dl-nmrf">↓ Download</button>
+          </div>
+        </div>
+
+        <!-- Baseline Denoised -->
+        <div class="image-card">
+          <div class="card-header">
+            <span class="card-title"><span class="dot dot-baseline"></span>ResNet Baseline</span>
+          </div>
+          <div class="card-body">
+            <img id="img-baseline" alt="Baseline denoised" />
+          </div>
+          <div class="card-footer">
+            <button class="btn-download" id="dl-baseline">↓ Download</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ───── Metrics Table ───── -->
+      <div class="metrics-section">
+        <h2 class="results-heading">Metrics Comparison</h2>
+        <div class="metrics-table-wrapper">
+          <table class="metrics-table">
+            <thead>
+              <tr>
+                <th>Model</th>
+                <th>PSNR (dB) ↑</th>
+                <th>SSIM ↑</th>
+                <th>MAE ↓</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>
+                  <span class="metric-label"><span class="dot dot-noisy"></span> Noisy Input</span>
+                </td>
+                <td id="m-noisy-psnr">—</td>
+                <td id="m-noisy-ssim">—</td>
+                <td id="m-noisy-mae">—</td>
+              </tr>
+              <tr>
+                <td>
+                  <span class="metric-label"><span class="dot dot-nmrf"></span> Neural MRF</span>
+                </td>
+                <td id="m-nmrf-psnr">—</td>
+                <td id="m-nmrf-ssim">—</td>
+                <td id="m-nmrf-mae">—</td>
+              </tr>
+              <tr>
+                <td>
+                  <span class="metric-label"><span class="dot dot-baseline"></span> ResNet Baseline</span>
+                </td>
+                <td id="m-baseline-psnr">—</td>
+                <td id="m-baseline-ssim">—</td>
+                <td id="m-baseline-mae">—</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ───── Footer ───── -->
+    <footer class="footer">
+      Neural MRF Image Denoiser · Probabilistic Graphical Models · 2026
+    </footer>
+
+  </div>
+
+  <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>
