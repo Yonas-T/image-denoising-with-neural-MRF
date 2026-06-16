@@ -43,6 +43,7 @@ _warnings: list[str] = []
 
 nmrf_model = None
 baseline_model = None
+potts_model = None
 
 try:
     from models import NMRFDenoiser, ResNetDenoiser
@@ -100,6 +101,20 @@ def _load_models():
         return
 
     device = torch.device("cpu")
+
+    # --- Potts Model (Pure MRF) ---------------------------------------------
+    try:
+        potts_model = NMRFDenoiser(in_channels=3, base_channels=32, use_neural_potentials=False).to(device)
+        ckpt_potts = os.path.join(PROJECT_ROOT, "checkpoints", "ablation", "ablation_potts_best.pth")
+        if os.path.isfile(ckpt_potts):
+            potts_model.load_state_dict(torch.load(ckpt_potts, map_location=device))
+            logging.info("Loaded Potts model checkpoint: %s", ckpt_potts)
+        else:
+            _warnings.append("Potts model checkpoint not found – using untrained weights.")
+        potts_model.eval()
+    except Exception as exc:
+        _warnings.append(f"Potts model init failed: {exc}")
+        potts_model = None
 
     # --- NMRF ----------------------------------------------------------------
     try:
@@ -248,9 +263,14 @@ def denoise():
             else:
                 baseline_out = noisy
 
+            if potts_model is not None:
+                potts_out = potts_model(noisy)
+            else:
+                potts_out = noisy
+
         # --- Metrics (computed on the padded region for consistency) ----------
         metrics = {}
-        for label, restored in [("nmrf", nmrf_out), ("baseline", baseline_out)]:
+        for label, restored in [("nmrf", nmrf_out), ("potts", potts_out), ("baseline", baseline_out)]:
             metrics[label] = {
                 "psnr": round(compute_psnr(padded, restored), 2),
                 "ssim": round(compute_ssim(padded, restored), 4),
@@ -269,6 +289,7 @@ def denoise():
             "original": _tensor_to_base64(padded, orig_h, orig_w),
             "noisy": _tensor_to_base64(noisy, orig_h, orig_w),
             "nmrf_denoised": _tensor_to_base64(nmrf_out, orig_h, orig_w),
+            "potts_denoised": _tensor_to_base64(potts_out, orig_h, orig_w),
             "baseline_denoised": _tensor_to_base64(baseline_out, orig_h, orig_w),
             "metrics": metrics,
             "warnings": _warnings,

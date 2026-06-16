@@ -24,12 +24,14 @@ const imgOriginal = document.getElementById('img-original');
 const imgNoisy    = document.getElementById('img-noisy');
 const imgNmrf     = document.getElementById('img-nmrf');
 const imgBaseline = document.getElementById('img-baseline');
+const imgPotts = document.getElementById('img-potts');
 
 // Download buttons
 const dlOriginal = document.getElementById('dl-original');
 const dlNoisy    = document.getElementById('dl-noisy');
 const dlNmrf     = document.getElementById('dl-nmrf');
 const dlBaseline = document.getElementById('dl-baseline');
+const dlPotts = document.getElementById('dl-potts');
 
 // State
 let uploadedFile = null;
@@ -142,6 +144,7 @@ function displayResults(data) {
   imgOriginal.src = 'data:image/png;base64,' + data.original;
   imgNoisy.src    = 'data:image/png;base64,' + data.noisy;
   imgNmrf.src     = 'data:image/png;base64,' + data.nmrf_denoised;
+  imgPotts.src    = 'data:image/png;base64,' + data.potts_denoised;
   imgBaseline.src = 'data:image/png;base64,' + data.baseline_denoised;
 
   // Fill metrics
@@ -155,17 +158,22 @@ function displayResults(data) {
   setMetric('m-baseline-psnr', m.baseline.psnr, 'psnr');
   setMetric('m-baseline-ssim', m.baseline.ssim, 'ssim');
   setMetric('m-baseline-mae',  m.baseline.mae,  'mae');
+  setMetric('m-potts-psnr', m.potts.psnr, 'psnr'); 
+  setMetric('m-potts-ssim', m.potts.ssim, 'ssim'); 
+  setMetric('m-potts-mae',  m.potts.mae,  'mae'); 
 
-  // Highlight best between NMRF and baseline
-  highlightBest('psnr', m.nmrf.psnr, m.baseline.psnr, true);   // higher is better
-  highlightBest('ssim', m.nmrf.ssim, m.baseline.ssim, true);
-  highlightBest('mae',  m.nmrf.mae,  m.baseline.mae,  false);  // lower is better
+  // Highlight best between NMRF, Potts, and baseline
+  highlightBest('psnr', m.nmrf.psnr, m.potts.psnr, m.baseline.psnr, true);   // higher is better
+  highlightBest('ssim', m.nmrf.ssim, m.potts.ssim, m.baseline.ssim, true);
+  highlightBest('mae',  m.nmrf.mae, m.potts.mae, m.baseline.mae,  false);  // lower is better
+
 
   // Setup download buttons
   setupDownload(dlOriginal, data.original,          'original.png');
   setupDownload(dlNoisy,    data.noisy,             'noisy.png');
   setupDownload(dlNmrf,     data.nmrf_denoised,     'nmrf_denoised.png');
   setupDownload(dlBaseline, data.baseline_denoised, 'baseline_denoised.png');
+  setupDownload(dlPotts,    data.potts_denoised,    'potts_denoised.png'); 
 
   // Show results
   resultsSection.classList.add('visible');
@@ -184,20 +192,22 @@ function setMetric(id, value, type) {
   el.classList.remove('metric-best');
 }
 
-function highlightBest(metric, nmrfVal, baselineVal, higherIsBetter) {
+function highlightBest(metric, nmrfVal, pottsVal, baselineVal, higherIsBetter) {
   const nmrfEl     = document.getElementById('m-nmrf-' + metric);
+  const pottsEl    = document.getElementById('m-potts-' + metric);
   const baselineEl = document.getElementById('m-baseline-' + metric);
 
   nmrfEl.classList.remove('metric-best');
+  pottsEl.classList.remove('metric-best');
   baselineEl.classList.remove('metric-best');
 
-  if (higherIsBetter) {
-    if (nmrfVal >= baselineVal) nmrfEl.classList.add('metric-best');
-    else baselineEl.classList.add('metric-best');
-  } else {
-    if (nmrfVal <= baselineVal) nmrfEl.classList.add('metric-best');
-    else baselineEl.classList.add('metric-best');
-  }
+  let bestVal = higherIsBetter 
+    ? Math.max(nmrfVal, pottsVal, baselineVal) 
+    : Math.min(nmrfVal, pottsVal, baselineVal);
+
+  if (nmrfVal === bestVal) nmrfEl.classList.add('metric-best');
+  else if (pottsVal === bestVal) pottsEl.classList.add('metric-best');
+  else if (baselineVal === bestVal) baselineEl.classList.add('metric-best');
 }
 
 function setupDownload(btn, base64Data, filename) {

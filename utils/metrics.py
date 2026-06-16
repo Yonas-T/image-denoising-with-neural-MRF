@@ -54,6 +54,11 @@ def compute_ssim(
     """
     clean, denoised = _to_numpy(clean), _to_numpy(denoised)
 
+    # 1. Squeeze batch dimension if present (e.g., (1, C, H, W) -> (C, H, W))
+    if clean.ndim == 4 and clean.shape[0] == 1:
+        clean = np.squeeze(clean, axis=0)
+        denoised = np.squeeze(denoised, axis=0)
+
     # Ensure (H, W, C)
     if clean.ndim == 3 and clean.shape[0] in (1, 3):
         clean = np.transpose(clean, (1, 2, 0))
@@ -61,12 +66,24 @@ def compute_ssim(
 
     try:
         from skimage.metrics import structural_similarity
+        
+        # 2. Dynamically determine window size based on image size
+        min_side = min(clean.shape[0], clean.shape[1])
+        if min_side < 3:
+            raise ValueError("Image dimensions too small for sliding window SSIM")
+            
+        win_size = min(7, min_side)
+        if win_size % 2 == 0:
+            win_size -= 1
+            
         return float(
             structural_similarity(
-                clean, denoised, data_range=data_range, channel_axis=-1 if clean.ndim == 3 else None
+                clean, denoised, data_range=data_range, 
+                channel_axis=-1 if clean.ndim == 3 else None,
+                win_size=win_size
             )
         )
-    except ImportError:
+    except (ImportError, ValueError):
         pass
 
     # Fallback: simplified global SSIM
@@ -80,7 +97,6 @@ def compute_ssim(
     l = (2 * mu_x * mu_y + c1) / (mu_x ** 2 + mu_y ** 2 + c1)
     cs = (2 * sig_xy + c2) / (sig_x_sq + sig_y_sq + c2)
     return float(l * cs)
-
 
 def compute_mae(clean: np.ndarray, denoised: np.ndarray) -> float:
     """Mean Absolute Error (lower is better).

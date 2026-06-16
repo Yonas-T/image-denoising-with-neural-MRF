@@ -112,6 +112,19 @@
           </div>
         </div>
 
+        <!-- Pure MRF (Potts) -->
+        <div class="image-card">
+          <div class="card-header">
+            <span class="card-title"><span class="dot dot-potts"></span>Pure MRF (Potts)</span>
+          </div>
+          <div class="card-body">
+            <img id="img-potts" alt="Pure MRF denoised" />
+          </div>
+          <div class="card-footer">
+            <button class="btn-download" id="dl-potts">↓ Download</button>
+          </div>
+        </div>
+
         <!-- NMRF Denoised -->
         <div class="image-card">
           <div class="card-header">
@@ -153,6 +166,7 @@
               </tr>
             </thead>
             <tbody>
+              
               <tr>
                 <td>
                   <span class="metric-label"><span class="dot dot-noisy"></span> Noisy Input</span>
@@ -160,6 +174,14 @@
                 <td id="m-noisy-psnr">—</td>
                 <td id="m-noisy-ssim">—</td>
                 <td id="m-noisy-mae">—</td>
+              </tr>
+              <tr>
+                <td>
+                  <span class="metric-label"><span class="dot dot-potts"></span> Pure MRF (Potts)</span>
+                </td>
+                <td id="m-potts-psnr">—</td>
+                <td id="m-potts-ssim">—</td>
+                <td id="m-potts-mae">—</td>
               </tr>
               <tr>
                 <td>

@@ -297,7 +297,7 @@ input[type="range"]::-moz-range-thumb {
 /* Image Grid */
 .results-grid {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(5, 1fr);
   gap: 1.2rem;
   margin-bottom: 2.5rem;
 }
@@ -337,6 +337,7 @@ input[type="range"]::-moz-range-thumb {
 .dot-noisy    { background: var(--red); }
 .dot-nmrf     { background: var(--primary-l); }
 .dot-baseline { background: var(--cyan); }
+.dot-potts    { background: var(--amber); }
 
 .card-body {
   padding: 0.6rem;
