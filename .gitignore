@@ -3,4 +3,11 @@ benchmark_paper.tex
 proposal.md
 venv/
 
+# Ignore dataset, cache
 datasets/
+__pycache__/
+*.pyc
+
+# Ignore intermediate checkpoints but keep best models
+checkpoints/*
+!checkpoints/*_best.pth

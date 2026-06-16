@@ -106,6 +106,9 @@ def main():
         model = ResNetDenoiser(in_channels=3, base_channels=32)
         model_name = "baseline"
 
+    if args.noise_type == "poisson":
+        model_name = f"{model_name}_poisson"
+
     total_params = sum(p.numel() for p in model.parameters())
     print(f"Model: {model_name} ({total_params:,} parameters)")
 
