@@ -198,7 +198,7 @@ def setup_datasets(data_root: str = "./datasets") -> dict[str, str]:
     """
     paths = {}
     paths["bsds500"] = download_bsds500(data_root)
-    paths["kodak24"] = download_kodak24(data_root)
+    # paths["kodak24"] = download_kodak24(data_root)
     return paths
 
 
