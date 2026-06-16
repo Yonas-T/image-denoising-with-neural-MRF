@@ -11,3 +11,6 @@ __pycache__/
 # Ignore intermediate checkpoints but keep best models
 checkpoints/*
 !checkpoints/*_best.pth
+!checkpoints/ablation/
+checkpoints/ablation/*
+!checkpoints/ablation/*_best.pth
