@@ -1,9 +1,3 @@
-"""Evaluation pipeline for trained denoising models.
-
-Loads a checkpoint, runs inference on a test dataset, computes
-per-image and average quality metrics, and optionally saves
-denoised images and a metrics CSV.
-"""
 
 import os
 import csv
@@ -20,13 +14,6 @@ from utils.metrics import compute_psnr, compute_ssim, compute_mae
 
 
 class Evaluator:
-    """Evaluate a denoising model on a test dataset.
-
-    Args:
-        model: Trained denoising model.
-        test_loader: DataLoader yielding ``(noisy, clean, filename)``.
-        device: Compute device.
-    """
 
     def __init__(
         self,
@@ -41,11 +28,7 @@ class Evaluator:
 
     @torch.no_grad()
     def evaluate(self) -> dict:
-        """Run evaluation and return metrics.
 
-        Returns:
-            Dict with ``'per_image'`` list and ``'average'`` summary.
-        """
         per_image = []
 
         for noisy, clean, filenames in tqdm(self.test_loader, desc="Evaluating"):
@@ -91,14 +74,7 @@ class Evaluator:
 
     @torch.no_grad()
     def evaluate_and_save(self, output_dir: str = "./results") -> dict:
-        """Evaluate, save denoised images and metrics CSV.
 
-        Args:
-            output_dir: Directory to write outputs.
-
-        Returns:
-            Same dict as :meth:`evaluate`.
-        """
         os.makedirs(output_dir, exist_ok=True)
         results = self.evaluate()
 

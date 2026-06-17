@@ -1,9 +1,3 @@
-"""Reconstruction head for the NMRF denoiser.
-
-Upsamples refined coarse features back to full resolution using
-transposed convolutions and skip connections from the encoder.
-Outputs a noise residual for residual learning.
-"""
 
 import torch
 import torch.nn as nn
@@ -12,21 +6,6 @@ from .backbone import ResidualBlock
 
 
 class ReconstructionHead(nn.Module):
-    """U-Net-style decoder that predicts a noise residual.
-
-    Architecture::
-
-        Stage 1: ConvTranspose2d(4c → 2c, s=2) ─╮
-                 concat with f2 skip (2c)        ├─► Conv(4c → 2c) + ResBlock(2c)
-                                                  ╯
-        Stage 2: ConvTranspose2d(2c → c, s=2) ──╮
-                 concat with f1 skip (c)        ├─► Conv(2c → c) + ResBlock(c)
-                                                 ╯
-        Head:    Conv(c → 3)  (noise residual)
-
-    Args:
-        base_channels: Base channel count ``c`` (must match backbone).
-    """
 
     def __init__(self, base_channels: int = 32) -> None:
         super().__init__()
@@ -71,19 +50,7 @@ class ReconstructionHead(nn.Module):
         f2_skip: torch.Tensor,
         f1_skip: torch.Tensor,
     ) -> torch.Tensor:
-        """Decode refined coarse features into a noise residual image.
 
-        Args:
-            coarse_features: Refined features from the NMRF,
-                shape ``(B, 4c, H/4, W/4)``.
-            f2_skip: Half-resolution skip features from the backbone,
-                shape ``(B, 2c, H/2, W/2)``.
-            f1_skip: Full-resolution skip features from the backbone,
-                shape ``(B, c, H, W)``.
-
-        Returns:
-            Predicted noise residual of shape ``(B, 3, H, W)``.
-        """
         # Stage 1: upsample coarse 4c → 2c, fuse with f2
         x = self.up1_act(self.up1_norm(self.up1(coarse_features)))
         x = torch.cat([x, f2_skip], dim=1)  # (B, 4c, H/2, W/2)

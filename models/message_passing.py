@@ -1,18 +1,14 @@
 """Neural message passing layers for the NMRF framework.
 
-Implements the core message-passing operations described in
-Guan et al. (CVPR 2024), Equations 5–8, adapted from stereo
-matching to 2D image denoising.
-
 Key components:
 
-* :class:`NeighborAggregation` — multi-head attention over a
+* Neighbour agregation: multi-head attention over a
   spatial ``M×M`` window with relative positional bias (Eq. 7-8).
-* :class:`SelfAggregation` — channel-grouped self-attention
+* Self agregation: channel-grouped self-attention
   modelling intra-pixel feature competition.
-* :class:`MessagePassingLayer` — one message-passing round
+* Message passing layer: one message-passing round
   combining aggregation + feed-forward MLP (Eq. 5-6).
-* :class:`NeuralMRF` — stacked message-passing iterations.
+* NeuralMRF: stacked message-passing iterations.
 """
 
 from __future__ import annotations
@@ -31,18 +27,6 @@ from .potentials import PottsAggregation
 # ------------------------------------------------------------------ #
 
 class NeighborAggregation(nn.Module):
-    """Attentional aggregation over an M×M spatial neighborhood.
-
-    For every pixel, queries are formed from the center feature and
-    keys/values from the surrounding ``window_size × window_size``
-    patch.  Multi-head attention is used with a learnable relative
-    positional bias table (one scalar per relative offset per head).
-
-    Args:
-        dim: Feature channel dimension ``C``.
-        num_heads: Number of attention heads.
-        window_size: Side length ``M`` of the square window (odd).
-    """
 
     def __init__(
         self, dim: int, num_heads: int = 4, window_size: int = 5
@@ -69,14 +53,8 @@ class NeighborAggregation(nn.Module):
         nn.init.trunc_normal_(self.rel_pos_bias, std=0.02)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """Compute neighbor attention messages.
+        # Compute neighbor attention messages.
 
-        Args:
-            x: Feature map of shape ``(B, C, H, W)``.
-
-        Returns:
-            Message tensor of shape ``(B, C, H, W)``.
-        """
         B, C, H, W = x.shape
         M = self.window_size
         pad = M // 2
@@ -129,24 +107,7 @@ class NeighborAggregation(nn.Module):
         return out.reshape(B, H, W, C).permute(0, 3, 1, 2)
 
 
-# ------------------------------------------------------------------ #
-#  Self-edge aggregation
-# ------------------------------------------------------------------ #
-
 class SelfAggregation(nn.Module):
-    """Channel-grouped self-attention for intra-pixel competition.
-
-    The feature channels are split into ``num_groups`` groups.  Within
-    each spatial location, self-attention is computed *across* the
-    groups (treating each group vector as a token).  This models
-    competition among different feature "hypotheses" at every pixel.
-
-    Args:
-        dim: Feature dimension ``C`` (must be divisible by *num_groups*).
-        num_heads: Number of attention heads (unused in the current
-            per-group QKV scheme but kept for API consistency).
-        num_groups: Number of groups ``G``.
-    """
 
     def __init__(
         self, dim: int, num_heads: int = 4, num_groups: int = 8
@@ -163,14 +124,7 @@ class SelfAggregation(nn.Module):
         self.out_proj = nn.Linear(gd, gd)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """Compute self-edge messages via grouped self-attention.
-
-        Args:
-            x: Feature map of shape ``(B, C, H, W)``.
-
-        Returns:
-            Message tensor of shape ``(B, C, H, W)``.
-        """
+        
         B, C, H, W = x.shape
         G = self.num_groups
         gd = self.group_dim
@@ -194,24 +148,7 @@ class SelfAggregation(nn.Module):
         return out.reshape(B, H, W, C).permute(0, 3, 1, 2)
 
 
-# ------------------------------------------------------------------ #
-#  Message-passing layer (Eq. 5-6)
-# ------------------------------------------------------------------ #
-
 class MessagePassingLayer(nn.Module):
-    """Single message-passing round (Eq. 5-6 of the paper).
-
-    Comprises an aggregation step (neighbor or self) with a residual
-    connection, followed by a 2-layer MLP (expand → GELU → project)
-    with another residual.  Instance normalization is applied before
-    each sub-layer.
-
-    Args:
-        dim: Feature dimension ``C``.
-        aggregation_module: An instantiated aggregation module
-            (:class:`NeighborAggregation`, :class:`SelfAggregation`,
-            or :class:`PottsAggregation`).
-    """
 
     def __init__(self, dim: int, aggregation_module: nn.Module) -> None:
         super().__init__()
@@ -225,14 +162,7 @@ class MessagePassingLayer(nn.Module):
         )
 
     def forward(self, mu: torch.Tensor) -> torch.Tensor:
-        """Run one message-passing iteration.
 
-        Args:
-            mu: Current belief tensor of shape ``(B, C, H, W)``.
-
-        Returns:
-            Updated belief tensor of shape ``(B, C, H, W)``.
-        """
         # Eq. 5: aggregation with residual
         mu_hat = mu + self.aggregation(self.norm1(mu))
         # Eq. 6: MLP with residual
@@ -240,27 +170,7 @@ class MessagePassingLayer(nn.Module):
         return mu
 
 
-# ------------------------------------------------------------------ #
-#  Full Neural MRF
-# ------------------------------------------------------------------ #
-
 class NeuralMRF(nn.Module):
-    """Stacked neural message-passing module.
-
-    Iteratively refines a coarse feature map through alternating
-    neighbor-edge and (optionally) self-edge aggregation layers.
-
-    Args:
-        dim: Feature dimension (typically ``4 × base_channels = 128``).
-        num_iterations: Number of message-passing rounds.
-        window_size: Spatial window size ``M`` for neighbor aggregation.
-        num_heads: Attention heads in neighbor aggregation.
-        num_groups: Groups in self-edge aggregation.
-        use_self_edges: Whether to include self-edge layers.
-        use_neural_potentials: If *True*, use learned
-            :class:`NeighborAggregation`; if *False*, fall back to
-            :class:`PottsAggregation`.
-    """
 
     def __init__(
         self,
@@ -293,14 +203,6 @@ class NeuralMRF(nn.Module):
         self.layers = nn.ModuleList(layers)
 
     def forward(self, features: torch.Tensor) -> torch.Tensor:
-        """Iteratively refine features via message passing.
-
-        Args:
-            features: Coarse feature map of shape ``(B, C, H, W)``.
-
-        Returns:
-            Refined feature map of the same shape.
-        """
         mu = features
         for layer in self.layers:
             mu = layer(mu)

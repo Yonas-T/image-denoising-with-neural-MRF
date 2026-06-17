@@ -1,10 +1,5 @@
-"""Pure ResNet encoder-decoder baseline for image denoising.
-
-A standard U-Net style architecture with ResidualBlocks, skip
-connections, and residual learning (predicts noise, subtracts
-from input). Contains NO MRF or message-passing components —
-serves as the deep-learning-only comparison baseline.
-"""
+# Pure ResNet encoder-decoder baseline for image denoising.
+# Contains NO MRF or message-passing components and it serves as the deep-learning-only comparison baseline
 
 import torch
 import torch.nn as nn
@@ -30,9 +25,6 @@ class ResNetDenoiser(nn.Module):
 
         Head: Conv(c → 3) → noise residual
 
-    Args:
-        in_channels: Number of input channels (default: 3).
-        base_channels: Base channel count ``c`` (default: 32).
     """
 
     def __init__(self, in_channels: int = 3, base_channels: int = 32) -> None:
@@ -101,15 +93,7 @@ class ResNetDenoiser(nn.Module):
         self.head = nn.Conv2d(c, 3, 3, padding=1)
 
     def forward(self, noisy_image: torch.Tensor) -> torch.Tensor:
-        """Denoise an input image.
-
-        Args:
-            noisy_image: Noisy RGB tensor ``(B, 3, H, W)`` in ``[0, 1]``.
-                ``H`` and ``W`` should each be divisible by 4.
-
-        Returns:
-            Denoised image ``(B, 3, H, W)`` clamped to ``[0, 1]``.
-        """
+        
         # Encode
         s1 = self.enc1(noisy_image)   # (B, c,  H,   W)
         s2 = self.enc2(s1)            # (B, 2c, H/2, W/2)

@@ -1,9 +1,3 @@
-"""Training loop for image denoising models.
-
-Provides a :class:`Trainer` that handles the full training lifecycle:
-optimizer, one-cycle LR scheduler, L1 loss, checkpointing, and
-per-epoch validation with PSNR/SSIM/MAE.
-"""
 
 import os
 import time
@@ -19,18 +13,6 @@ from utils.metrics import compute_psnr, compute_ssim, compute_mae
 
 
 class Trainer:
-    """Complete training loop for a denoising model.
-
-    Args:
-        model: The denoising model (NMRFDenoiser or ResNetDenoiser).
-        train_loader: DataLoader yielding ``(noisy, clean)`` patch pairs.
-        val_loader: DataLoader yielding ``(noisy, clean, filename)`` tuples.
-        device: ``'cpu'`` or ``'cuda'``.
-        lr: Peak learning rate for one-cycle scheduler.
-        num_epochs: Total training epochs.
-        checkpoint_dir: Where to save model checkpoints.
-        model_name: Name prefix for checkpoint files.
-    """
 
     def __init__(
         self,
@@ -68,11 +50,7 @@ class Trainer:
         self.history = {"train_loss": [], "val_psnr": [], "val_ssim": [], "val_mae": []}
 
     def train_epoch(self, epoch: int) -> float:
-        """Train for one epoch.
 
-        Returns:
-            Average training loss.
-        """
         self.model.train()
         total_loss = 0.0
         pbar = tqdm(
@@ -99,11 +77,7 @@ class Trainer:
 
     @torch.no_grad()
     def validate(self) -> dict:
-        """Validate on the validation/test set.
 
-        Returns:
-            Dict with ``'psnr'``, ``'ssim'``, ``'mae'`` averages.
-        """
         if self.val_loader is None:
             return {"psnr": 0.0, "ssim": 0.0, "mae": 0.0}
 
@@ -148,7 +122,6 @@ class Trainer:
         }
 
     def save_checkpoint(self, path: str, epoch: int, metrics: dict) -> None:
-        """Save model checkpoint."""
         torch.save(
             {
                 "epoch": epoch,
@@ -160,11 +133,7 @@ class Trainer:
         )
 
     def train(self) -> dict:
-        """Run the full training loop.
 
-        Returns:
-            Training history dict.
-        """
         print(f"\n{'='*60}")
         print(f"Training {self.model_name} for {self.num_epochs} epochs")
         print(f"Device: {self.device}")

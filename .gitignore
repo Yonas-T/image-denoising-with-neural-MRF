@@ -14,3 +14,5 @@ checkpoints/*
 !checkpoints/ablation/
 checkpoints/ablation/*
 !checkpoints/ablation/*_best.pth
+
+reports/

@@ -1,17 +1,3 @@
-"""Ablation study runner for Neural MRF image denoising.
-
-Runs three ablation studies:
-
-1. **Neural vs Potts potentials** — learned attention vs fixed
-   Gaussian-kernel pairwise potential.
-2. **Self-edges** — with vs without intra-pixel competition.
-3. **Message-passing iterations** — varying N_i ∈ {1, 2, 4, 6}.
-
-Each study trains a model variant for a configurable number of
-epochs, evaluates on a test set, and records PSNR / SSIM / MAE.
-
-"""
-
 import argparse
 import os
 import sys
@@ -81,9 +67,7 @@ def _train_and_eval(model, args, variant_name):
     return results["average"]
 
 
-# ------------------------------------------------------------------
 # Ablation 1: Neural potentials vs Potts model
-# ------------------------------------------------------------------
 def run_potentials_ablation(args) -> dict:
     """Compare learned neural potentials with hand-crafted Potts model."""
     print("\n" + "=" * 60)
@@ -105,9 +89,7 @@ def run_potentials_ablation(args) -> dict:
     return results
 
 
-# ------------------------------------------------------------------
 # Ablation 2: Self-edges
-# ------------------------------------------------------------------
 def run_self_edges_ablation(args) -> dict:
     """Compare model with and without self-edge aggregation layers."""
     print("\n" + "=" * 60)
@@ -127,9 +109,7 @@ def run_self_edges_ablation(args) -> dict:
     return results
 
 
-# ------------------------------------------------------------------
 # Ablation 3: Number of message-passing iterations
-# ------------------------------------------------------------------
 def run_iterations_ablation(args) -> dict:
     """Test different numbers of message-passing iterations."""
     print("\n" + "=" * 60)
@@ -145,9 +125,6 @@ def run_iterations_ablation(args) -> dict:
     return results
 
 
-# ------------------------------------------------------------------
-# Main
-# ------------------------------------------------------------------
 def _print_results_table(study_name: str, results: dict):
     """Pretty-print an ablation results table."""
     print(f"\n{'='*60}")

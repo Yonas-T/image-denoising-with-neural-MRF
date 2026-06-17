@@ -1,23 +1,10 @@
-"""Feature backbone for the NMRF image denoiser.
-
-Implements a ResNet-style multi-scale feature extractor following
-the 'Local feature CNN' described in Guan et al. (CVPR 2024).
-Produces features at three resolutions: full, half, and quarter.
-"""
-
 import torch
 import torch.nn as nn
 
 
 class ResidualBlock(nn.Module):
-    """Pre-activation style residual block with InstanceNorm.
-
-    Architecture:
-        Conv3x3 -> InstanceNorm2d -> ReLU -> Conv3x3 -> InstanceNorm2d + skip
-
-    Args:
-        channels: Number of input and output channels (unchanged).
-    """
+    # Pre-activation style residual block with InstanceNorm.
+    # Architecture: Conv3x3 -> InstanceNorm2d -> ReLU -> Conv3x3 -> InstanceNorm2d + skip
 
     def __init__(self, channels: int) -> None:
         super().__init__()
@@ -30,20 +17,11 @@ class ResidualBlock(nn.Module):
         )
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """Forward pass with residual connection.
-
-        Args:
-            x: Input tensor of shape ``(B, C, H, W)``.
-
-        Returns:
-            Output tensor of shape ``(B, C, H, W)``.
-        """
         return x + self.block(x)
 
 
 class FeatureBackbone(nn.Module):
     """Multi-scale ResNet feature extractor.
-
     Produces feature maps at three spatial resolutions suitable for
     the coarse-to-fine NMRF processing pipeline.
 
@@ -52,10 +30,6 @@ class FeatureBackbone(nn.Module):
         Level 1 (H×W):      Conv(in_ch → c)  + IN + ReLU, 2× ResBlock(c)
         Level 2 (H/2×W/2):  Conv(c → 2c, s=2) + IN + ReLU, 2× ResBlock(2c)
         Level 3 (H/4×W/4):  Conv(2c → 4c, s=2) + IN + ReLU, 2× ResBlock(4c)
-
-    Args:
-        in_channels: Number of input image channels (default: 3 for RGB).
-        base_channels: Base channel count ``c`` (default: 32).
     """
 
     def __init__(self, in_channels: int = 3, base_channels: int = 32) -> None:
@@ -92,19 +66,9 @@ class FeatureBackbone(nn.Module):
     def forward(
         self, x: torch.Tensor
     ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
-        """Extract multi-scale features from the input image.
+        # Extract multi-scale features from the input image.
 
-        Args:
-            x: Input image tensor of shape ``(B, C_in, H, W)`` with
-               pixel values in ``[0, 1]``.
-
-        Returns:
-            Tuple ``(f1, f2, f3)`` where:
-                - ``f1``: ``(B, c, H, W)`` — full-resolution features (skip).
-                - ``f2``: ``(B, 2c, H/2, W/2)`` — half-resolution features (skip).
-                - ``f3``: ``(B, 4c, H/4, W/4)`` — coarse features for NMRF.
-        """
-        f1 = self.level1(x)
-        f2 = self.level2(f1)
-        f3 = self.level3(f2)
+        f1 = self.level1(x) # full-resolution features
+        f2 = self.level2(f1) # half-resolution features
+        f3 = self.level3(f2) # coarse features for NMRF
         return f1, f2, f3

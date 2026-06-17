@@ -1,10 +1,3 @@
-"""Hand-crafted Potts model pairwise potential for ablation.
-
-Replaces the learned neural attention in :class:`NeighborAggregation`
-with a fixed Gaussian-kernel aggregation scheme.  This serves as a
-classical-MRF baseline for the ablation study, demonstrating the
-value of learned potentials over hand-crafted ones.
-"""
 
 import torch
 import torch.nn as nn
@@ -12,22 +5,6 @@ import torch.nn.functional as F
 
 
 class PottsAggregation(nn.Module):
-    """Gaussian-kernel neighbor aggregation (Potts model potential).
-
-    For each spatial location, extracts an ``M×M`` window of neighbor
-    features, computes pairwise L2 distances to the center pixel,
-    and aggregates using Gaussian-weighted summation.
-
-    This is a non-learned counterpart to
-    :class:`~models.message_passing.NeighborAggregation`.
-
-    Args:
-        dim: Feature dimension ``C``.
-        window_size: Side length ``M`` of the square neighbor window
-            (must be odd).  Default: 5.
-        sigma: Standard deviation of the Gaussian weighting kernel.
-            Default: 1.0.
-    """
 
     def __init__(self, dim: int, window_size: int = 5, sigma: float = 1.0) -> None:
         super().__init__()
@@ -37,14 +14,7 @@ class PottsAggregation(nn.Module):
         self.out_proj = nn.Linear(dim, dim)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        """Aggregate neighbor features using Gaussian-weighted Potts potential.
 
-        Args:
-            x: Input features of shape ``(B, C, H, W)``.
-
-        Returns:
-            Aggregated message tensor of shape ``(B, C, H, W)``.
-        """
         B, C, H, W = x.shape
         M = self.window_size
         pad = M // 2
