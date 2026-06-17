@@ -149,9 +149,6 @@ function displayResults(data) {
 
   // Fill metrics
   const m = data.metrics;
-  setMetric('m-noisy-psnr',    m.noisy.psnr,    'psnr');
-  setMetric('m-noisy-ssim',    m.noisy.ssim,    'ssim');
-  setMetric('m-noisy-mae',     m.noisy.mae,     'mae');
   setMetric('m-nmrf-psnr',     m.nmrf.psnr,     'psnr');
   setMetric('m-nmrf-ssim',     m.nmrf.ssim,     'ssim');
   setMetric('m-nmrf-mae',      m.nmrf.mae,      'mae');
